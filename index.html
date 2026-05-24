@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>計算トレーニング・スマホ版</title>
+    <style>
+        :root {
+            --bg-color: #f0f9ff;
+            --key-bg: #ffffff;
+            --key-text: #334155;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+        /* メイン表示エリア */
+        #display-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 { font-size: 24px; color: #0284c7; margin: 0 0 10px 0; }
+        .sub-title { font-size: 14px; font-weight: bold; color: #f59e0b; }
+
+        /* メッセージ・リザルト用 */
+        .info-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        /* タイムゲージ */
+        .timer-container { width: 100%; background: #e2e8f0; height: 12px; border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
+        #timer-bar { width: 100%; height: 100%; background: linear-gradient(90deg, #4ade80, #ef4444); transition: width 0.1s linear; }
+
+        /* 数式 */
+        #formula-display { font-size: 60px; font-weight: bold; margin: 20px 0; color: #1e293b; }
+        #user-input { color: var(--accent-blue); border-bottom: 4px solid #cbd5e1; min-width: 50px; display: inline-block; }
+
+        /* テンキーエリア */
+        #keypad {
+            background: #cbd5e1;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2px;
+            padding: 5px;
+            padding-bottom: env(safe-area-inset-bottom); /* iPhoneのバー対策 */
+        }
+        .key {
+            background: var(--key-bg);
+            border: none;
+            height: 70px;
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--key-text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background 0.1s;
+        }
+        .key:active { background: #e2e8f0; transform: scale(0.98); }
+        .key.op { background: #f8fafc; color: var(--accent-blue); }
+        .key.enter { background: var(--accent-blue); color: white; grid-row: span 2; height: 142px; }
+
+        /* 判定幕 */
+        #full-screen-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 200px; font-weight: bold; z-index: 999; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
+        .overlay-correct { background: rgba(220, 252, 231, 0.7); color: var(--accent-green); }
+        .overlay-wrong { background: rgba(254, 226, 226, 0.7); color: var(--accent-red); }
+
+        .hidden { display: none !important; }
+        .compare-text { font-size: 14px; color: #f59e0b; margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="display-area">
+    <div id="layer-1" class="info-card">
+        <h1>くりあがり・くりさがり<br><span style="color:#f59e0b">ＡＩトレーニング！</span></h1>
+        <p>下のボタンで えらんでね</p>
+        <div style="font-weight: bold; color: #3b82f6;">[＋] たしざん<br>[－] ひきざん</div>
+    </div>
+
+    <div id="layer-2" class="info-card hidden">
+        <h2 id="mode-title" style="margin-top:0">たしざん</h2>
+        <p>チャレンジを えらぼう</p>
+        <div style="text-align: left; font-size: 14px; line-height: 1.6;">
+            <b>[1] ４３もん チャレンジ</b><br>
+            <span style="color:red">※ぜんぶ クリアしよう！</span><br><br>
+            <div id="tokkun-option">
+                <b>[2] ３０びょう チャレンジ</b><br>
+                <span id="tokkun-lock-msg" style="color:gray">※まず 43もんクリアしてね</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="layer-3" class="hidden" style="width:100%">
+        <div class="timer-container"><div id="timer-bar"></div></div>
+        <div id="timer-text" style="font-weight:bold; color:var(--accent-red)">0.0</div>
+        <div id="formula-display">
+            <span id="formula-text">5 + 6 = </span><span id="user-input"></span>
+        </div>
+        <div style="font-weight:bold; color:#64748b">
+            <span id="score-label">せいかい:</span> <span id="score" style="color:var(--accent-blue)">0</span> / <span id="target-count">43</span>
+        </div>
+    </div>
+
+    <div id="layer-4" class="info-card hidden">
+        <h2 id="result-title">クリア！</h2>
+        <div id="result-body" style="font-size: 20px; font-weight: bold;"></div>
+        <div id="time-comparison" class="compare-text"></div>
+        <div id="weak-section" class="hidden">
+            <p style="color:red; margin-bottom:5px">🔥 にがてな もんだい</p>
+            <div id="weak-list" style="font-size:24px; font-weight:bold"></div>
+        </div>
+        <p style="font-size:12px; margin-top:20px;">[◎] をおすと つぎへすすむよ</p>
+    </div>
+</div>
+
+<div id="keypad">
+    <button class="key" onclick="pressKey('7')">7</button>
+    <button class="key" onclick="pressKey('8')">8</button>
+    <button class="key" onclick="pressKey('9')">9</button>
+    <button class="key op" onclick="pressKey('+')">＋</button>
+    
+    <button class="key" onclick="pressKey('4')">4</button>
+    <button class="key" onclick="pressKey('5')">5</button>
+    <button class="key" onclick="pressKey('6')">6</button>
+    <button class="key op" onclick="pressKey('-')">－</button>
+    
+    <button class="key" onclick="pressKey('1')">1</button>
+    <button class="key" onclick="pressKey('2')">2</button>
+    <button class="key" onclick="pressKey('3')">3</button>
+    <button class="key enter" onclick="pressKey('Enter')">◎</button>
+    
+    <button class="key" style="grid-column: span 3;" onclick="pressKey('0')">0</button>
+</div>
+
+<div id="full-screen-overlay">〇</div>
+
+<script>
+    let currentLayer = 1;
+    let mode = 'add'; // 'add' or 'sub'
+    let playType = 'challenge';
+    let score = 0;
+    let msElapsed = 0;
+    let msLeft = 30000;
+    let timerInterval = null;
+    let currentAnswer = 0;
+    let currentInput = "";
+    
+    let isUnlockedAdd = false;
+    let isUnlockedSub = false;
+    let lastTimeAdd = null;
+    let lastTimeSub = null;
+
+    let aiStats = [];
+    let problemQueue = [];
+    let currentProblem = null;
+    let startTime = 0;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        if (type === 'click') { osc.frequency.value = 800; gain.gain.setValueAtTime(0.05, audioCtx.currentTime); osc.start(); osc.stop(audioCtx.currentTime + 0.05); }
+        else if (type === 'correct') { [523, 659, 783].forEach((f, i) => { const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value = f; g.gain.setValueAtTime(0.1, audioCtx.currentTime + i*0.1); o.start(audioCtx.currentTime + i*0.1); o.stop(audioCtx.currentTime + i*0.1 + 0.1); }); }
+        else if (type === 'wrong') { osc.frequency.value = 150; gain.gain.setValueAtTime(0.1, audioCtx.currentTime); osc.start(); osc.stop(audioCtx.currentTime + 0.3); }
+    }
+
+    function switchLayer(layerId) {
+        currentLayer = layerId;
+        document.getElementById('layer-1').classList.toggle('hidden', layerId !== 1);
+        document.getElementById('layer-2').classList.toggle('hidden', layerId !== 2);
+        document.getElementById('layer-3').classList.toggle('hidden', layerId !== 3);
+        document.getElementById('layer-4').classList.toggle('hidden', layerId !== 4);
+
+        if (layerId === 2) {
+            document.getElementById('mode-title').innerText = (mode === 'add' ? "【たしざん】" : "【ひきざん】");
+            let unlocked = (mode === 'add' ? isUnlockedAdd : isUnlockedSub);
+            document.getElementById('tokkun-option').style.opacity = unlocked ? "1" : "0.4";
+            document.getElementById('tokkun-lock-msg').innerText = unlocked ? "※30びょうで なんもんとける？" : "※まず 43もんクリアしてね";
+        }
+    }
+
+    function pressKey(key) {
+        playSound('click');
+        if (currentLayer === 1) {
+            if (key === '+') { mode = 'add'; switchLayer(2); }
+            if (key === '-') { mode = 'sub'; switchLayer(2); }
+        } else if (currentLayer === 2) {
+            if (key === '1') { playType = 'challenge'; startGame(); }
+            if (key === '2' && (mode === 'add' ? isUnlockedAdd : isUnlockedSub)) { playType = 'tokkun'; startGame(); }
+            if (key === '3') { switchLayer(1); }
+        } else if (currentLayer === 3) {
+            if (/[0-9]/.test(key)) handleNumInput(key);
+        } else if (currentLayer === 4) {
+            if (key === 'Enter') switchLayer(2);
+        }
+    }
+
+    function startGame() {
+        score = 0; currentInput = ""; problemQueue = [];
+        let list = [];
+        if (mode === 'add') { for(let i=2;i<=9;i++) for(let j=2;j<=9;j++) if(i+j>=10) list.push({n1:i, n2:j}); }
+        else { for(let i=11;i<=18;i++) { let m=(i%10)+1; for(let j=m;j<=9;j++) list.push({n1:i, n2:j}); } }
+        
+        list.sort(() => Math.random() - 0.5);
+        list.forEach(b => { if(!aiStats.some(s => s.n1 === b.n1 && s.n2 === b.n2 && s.mode === mode)) aiStats.push({n1:b.n1, n2:b.n2, mode, totalTime:0, count:0}); });
+
+        if (playType === 'challenge') {
+            problemQueue = list;
+            document.getElementById('target-count').innerText = "43";
+            document.getElementById('score-label').innerText = "せいかい:";
+            document.getElementById('timer-bar').style.width = "100%";
+        } else {
+            let filtered = aiStats.filter(s => s.mode === mode);
+            filtered.sort((a,b) => (b.totalTime/(b.count||1)) - (a.totalTime/(a.count||1)));
+            problemQueue = filtered.map(s => ({n1:s.n1, n2:s.n2}));
+            document.getElementById('target-count').innerText = "？";
+            document.getElementById('score-label').innerText = "てんすう:";
+        }
+        
+        switchLayer(3); nextQuestion();
+        clearInterval(timerInterval);
+        if (playType === 'challenge') {
+            msElapsed = 0;
+            timerInterval = setInterval(() => { msElapsed += 100; document.getElementById('timer-text').innerText = (msElapsed/1000).toFixed(1) + " 秒"; }, 100);
+        } else {
+            msLeft = 30000;
+            timerInterval = setInterval(() => { msLeft -= 100; document.getElementById('timer-text').innerText = (msLeft/1000).toFixed(1) + " 秒"; document.getElementById('timer-bar').style.width = (msLeft/30000*100) + '%'; if(msLeft <= 0) endGame(true); }, 100);
+        }
+    }
+
+    function nextQuestion() {
+        if (problemQueue.length === 0) {
+            if (playType === 'challenge') { endGame(false); return; }
+            else { startGame(); return; }
+        }
+        currentProblem = problemQueue.shift();
+        currentInput = ""; document.getElementById('user-input').innerText = "";
+        let sign = (mode === 'add' ? '+' : '-');
+        currentAnswer = (mode === 'add' ? currentProblem.n1 + currentProblem.n2 : currentProblem.n1 - currentProblem.n2);
+        document.getElementById('formula-text').innerText = `${currentProblem.n1} ${sign} ${currentProblem.n2} = `;
+        document.getElementById('score').innerText = score;
+        startTime = performance.now();
+    }
+
+    function handleNumInput(num) {
+        currentInput += num;
+        document.getElementById('user-input').innerText = currentInput;
+        let target = currentAnswer.toString();
+        if (target.length > currentInput.length) {
+            if (!target.startsWith(currentInput)) checkAnswer(false);
+            return;
+        }
+        checkAnswer(currentInput === target);
+    }
+
+    function checkAnswer(isCorrect) {
+        const elapsed = performance.now() - startTime;
+        const overlay = document.getElementById('full-screen-overlay');
+        let stats = aiStats.find(s => s.n1 === currentProblem.n1 && s.n2 === currentProblem.n2 && s.mode === mode);
+        if (stats) { stats.totalTime += (isCorrect ? elapsed : 5000); stats.count++; }
+
+        if (isCorrect) {
+            playSound('correct'); overlay.innerText = "〇"; overlay.className = "overlay-correct";
+            score++;
+        } else {
+            playSound('wrong'); overlay.innerText = "×"; overlay.className = "overlay-wrong";
+            problemQueue.push({n1: currentProblem.n1, n2: currentProblem.n2});
+        }
+        overlay.style.opacity = "1";
+        if (playType === 'challenge' && problemQueue.length === 0 && isCorrect) {
+            setTimeout(() => { overlay.style.opacity = "0"; endGame(false); }, 200);
+        } else {
+            setTimeout(() => { overlay.style.opacity = "0"; nextQuestion(); }, 200);
+        }
+    }
+
+    function endGame(isTimeUp) {
+        clearInterval(timerInterval);
+        const title = document.getElementById('result-title');
+        const body = document.getElementById('result-body');
+        const comp = document.getElementById('time-comparison');
+        comp.innerText = "";
+
+        if (playType === 'challenge' && !isTimeUp) {
+            title.innerText = "⭐ クリア！ ⭐";
+            let time = (msElapsed/1000).toFixed(1);
+            body.innerHTML = `タイム: <span style="color:var(--accent-blue)">${time}秒</span>`;
+            if (mode === 'add') { isUnlockedAdd = true; if(lastTimeAdd) { let d = time - lastTimeAdd; comp.innerText = d < 0 ? `さっきより ${Math.abs(d).toFixed(1)}秒 はやい！` : `さっきより ${d.toFixed(1)}秒 おそいよ`; } lastTimeAdd = time; }
+            else { isUnlockedSub = true; if(lastTimeSub) { let d = time - lastTimeSub; comp.innerText = d < 0 ? `さっきより ${Math.abs(d).toFixed(1)}秒 はやい！` : `さっきより ${d.toFixed(1)}秒 おそいよ`; } lastTimeSub = time; }
+        } else {
+            title.innerText = "タイムアップ！";
+            body.innerHTML = `せいかい: <span style="color:var(--accent-green)">${score}もん</span>`;
+        }
+
+        let weak = aiStats.filter(s => s.mode === mode && s.count > 0).sort((a,b) => (b.totalTime/b.count) - (a.totalTime/a.count)).filter(s => (s.totalTime/s.count) > 1800).slice(0, 2);
+        const weakSec = document.getElementById('weak-section');
+        const weakList = document.getElementById('weak-list');
+        weakList.innerHTML = "";
+        if (weak.length > 0) {
+            weak.forEach(s => { let sign = (mode === 'add' ? '+' : '-'); let ans = (mode === 'add' ? s.n1 + s.n2 : s.n1 - s.n2); weakList.innerHTML += `<div>${s.n1}${sign}${s.n2}=${ans}</div>`; });
+            weakSec.classList.remove('hidden');
+        } else { weakSec.classList.add('hidden'); }
+
+        switchLayer(4);
+    }
+</script>
+</body>
+</html>
