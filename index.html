@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>計算トレーニング・スマホ最適化版</title>
+    <title>計算トレーニング・スマホ版</title>
     <style>
         :root {
             --bg-color: #f0f9ff;
@@ -54,19 +54,20 @@
         .info-card {
             background: white;
             border-radius: 24px;
-            padding: 20px;
+            padding: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             width: 100%;
             max-width: 380px;
             box-sizing: border-box;
+            position: relative;
         }
 
-        /* メニューボタン（タップ用） */
+        /* ボタン */
         .menu-btn {
             display: block;
             width: 100%;
-            padding: 15px;
-            margin: 10px 0;
+            padding: 12px;
+            margin: 8px 0;
             font-size: 18px;
             font-weight: bold;
             border: none;
@@ -75,23 +76,49 @@
             color: white;
             box-shadow: 0 4px 0 #2563eb;
             transition: all 0.1s;
+            position: relative;
         }
         .menu-btn:active { transform: translateY(4px); box-shadow: none; }
-        .menu-btn.sub-btn { background: #f8fafc; color: #475569; box-shadow: 0 4px 0 #cbd5e1; }
+        .menu-btn.sub-btn { background: #f1f5f9; color: #475569; box-shadow: 0 4px 0 #cbd5e1; font-size: 14px; }
         .menu-btn.orange { background: var(--gold); box-shadow: 0 4px 0 #d97706; }
         .menu-btn.green { background: var(--accent-green); box-shadow: 0 4px 0 #059669; }
-        .menu-btn.locked { opacity: 0.5; pointer-events: none; }
+        .menu-btn.locked { opacity: 0.5; filter: grayscale(0.8); pointer-events: none; }
+
+        /* バッジ */
+        .badge {
+            font-size: 11px;
+            background: rgba(255,255,255,0.95);
+            color: #166534;
+            padding: 2px 8px;
+            border-radius: 10px;
+            position: absolute;
+            top: -6px;
+            right: 10px;
+            border: 1px solid #bbf7d0;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .ranking-area {
+            margin-top: 6px;
+            background: rgba(0,0,0,0.04);
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: normal;
+            text-align: left;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+        }
 
         .timer-container { width: 100%; background: #e2e8f0; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 8px; }
         #timer-bar { width: 100%; height: 100%; background: linear-gradient(90deg, #4ade80, #ef4444); transition: width 0.1s linear; }
 
         #formula-display { font-size: 56px; font-weight: bold; margin: 10px 0; color: #1e293b; }
-        #user-input { color: var(--accent-blue); border-bottom: 4px solid #cbd5e1; min-width: 50px; display: inline-block; text-align: center; }
+        #user-input { color: var(--accent-blue); border-bottom: 4px solid #cbd5e1; min-width: 50px; display: inline-block; }
 
-        /* 記録表示 */
-        .ranking-box { margin-top: 5px; font-size: 11px; text-align: left; border-top: 1px dashed #e2e8f0; padding-top: 5px; }
-
-        /* 大型化したテンキー（0-9のみ） */
+        /* テンキー */
         #keypad {
             background: #cbd5e1;
             display: grid;
@@ -105,7 +132,7 @@
         .key {
             background: var(--key-bg);
             border: none;
-            height: 70px; /* PC/電卓よりも高さを確保して指に合わせる */
+            height: 70px;
             font-size: 32px;
             font-weight: bold;
             color: var(--key-text);
@@ -113,16 +140,18 @@
             align-items: center;
             justify-content: center;
             border-radius: 8px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         .key:active { background: #cbd5e1; transform: scale(0.95); }
-        .key.zero { grid-column: span 3; height: 60px; }
+        .key.zero { grid-column: span 3; height: 55px; }
 
         #full-screen-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 180px; font-weight: bold; z-index: 999; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
         .overlay-correct { background: rgba(220, 252, 231, 0.75); color: var(--accent-green); }
         .overlay-wrong { background: rgba(254, 226, 226, 0.75); color: var(--accent-red); }
 
         .hidden { display: none !important; }
+
+        /* ★終了画面のボタンガード用スタイル */
+        .btn-guard { pointer-events: none; opacity: 0.7; }
     </style>
 </head>
 <body>
@@ -133,22 +162,27 @@
 
 <div id="display-area">
     <div id="layer-1" class="info-card">
-        <h1>たしざん・ひきざん<br><span style="color:var(--gold)">ＡＩトレーニング！</span></h1>
+        <h1 style="margin-bottom:15px;">たしざん・ひきざん<br><span style="color:var(--gold)">ＡＩトレーニング！</span></h1>
         <button class="menu-btn" onclick="selectMode('add')">たしざん をする</button>
         <button class="menu-btn" onclick="selectMode('sub')">ひきざん をする</button>
+        <div id="overall-status" style="font-size:12px; color:#64748b; margin-top:10px; background:#f8fafc; padding:8px; border-radius:10px;">
+            ぜんぶで 4モードあるよ！
+        </div>
     </div>
 
     <div id="layer-2" class="info-card hidden">
-        <h2 id="mode-title" style="margin:0; color:#0284c7;">たしざん</h2>
+        <h2 id="mode-title" style="margin:0 0 10px 0; color:#0284c7;">モード選択</h2>
         
         <button class="menu-btn orange" onclick="startPlay('challenge')">
+            <span id="badge-ch" class="badge hidden">クリア！</span>
             43もん チャレンジ
-            <div id="best-ch-mini" class="ranking-box"></div>
+            <div id="rank-ch" class="ranking-area"></div>
         </button>
         
         <button id="tokkun-btn" class="menu-btn green" onclick="startPlay('tokkun')">
+            <span id="badge-tk" class="badge hidden">クリア！</span>
             30びょう チャレンジ
-            <div id="best-tk-mini" class="ranking-box"></div>
+            <div id="rank-tk" class="ranking-area"></div>
         </button>
 
         <button class="menu-btn sub-btn" onclick="backToMain()">さいしょの画面にもどる</button>
@@ -158,27 +192,27 @@
         <div class="timer-container"><div id="timer-bar"></div></div>
         <div id="timer-text" style="font-weight:bold; color:var(--accent-red); font-size:18px;">0.0s</div>
         <div id="formula-display"><span id="formula-text"></span><span id="user-input"></span></div>
-        <div style="font-weight:bold; color:#64748b; font-size:15px;">
-            せいかい: <span id="score" style="color:var(--accent-blue)">0</span> / <span id="target-count">43</span>
+        <div style="font-weight:bold; color:#64748b;">
+             せいかい: <span id="score" style="color:var(--accent-blue)">0</span> / <span id="target-count">43</span>
         </div>
     </div>
 
     <div id="layer-4" class="info-card hidden">
         <h2 id="result-title" style="margin:0;">クリア！</h2>
-        <div id="result-body" style="font-size: 24px; font-weight: bold; margin:10px 0;"></div>
-        <div id="time-comparison" style="font-size:14px; color:var(--gold); font-weight:bold; margin-bottom:10px;"></div>
+        <div id="result-body" style="font-size: 26px; font-weight: bold; margin:5px 0; color:var(--accent-blue);"></div>
+        <div id="rank-info" style="font-size:15px; color:var(--gold); font-weight:bold; margin-bottom:10px;"></div>
         
-        <div id="weak-section" class="hidden" style="background:#fff1f2; padding:10px; border-radius:10px; margin-bottom:10px;">
-            <p style="color:var(--accent-red); margin:0; font-size:12px; font-weight:bold;">🔥 にがてな もんだい</p>
-            <div id="weak-list" style="font-size:22px; font-weight:bold; color:#e11d48;"></div>
+        <button id="retry-btn" class="menu-btn" onclick="backToSub()">もういちど あそぶ</button>
+        <button id="menu-back-btn" class="menu-btn sub-btn" onclick="backToMain()">メニューにもどる</button>
+
+        <div id="weak-section" class="hidden" style="background:#fff1f2; padding:10px; border-radius:12px; margin-top:10px;">
+            <p style="color:var(--accent-red); margin:0; font-size:12px; font-weight:bold;">🔥 つぎは これを がんばろう！</p>
+            <div id="weak-list" style="font-size:22px; font-weight:bold; color:#e11d48; margin-top:5px;"></div>
         </div>
-        
-        <button class="menu-btn" onclick="backToSub()">もう一度あそぶ</button>
-        <button class="menu-btn sub-btn" onclick="backToMain()">メニューにもどる</button>
     </div>
 </div>
 
-<div id="keypad">
+<div id="keypad" class="hidden">
     <button class="key" onclick="handleNumInput('7')">7</button>
     <button class="key" onclick="handleNumInput('8')">8</button>
     <button class="key" onclick="handleNumInput('9')">9</button>
@@ -199,6 +233,12 @@
     let currentAnswer = 0, currentInput = "", isUnlockedAdd = false, isUnlockedSub = false;
     let totalLearningSeconds = 0;
 
+    // 記録用
+    let records = { add_ch: [], add_tk: [], sub_ch: [], sub_tk: [] };
+    let clearCounts = { add_ch: 0, add_tk: 0, sub_ch: 0, sub_tk: 0 };
+    let aiStats = [], problemQueue = [], currentProblem = null, startTime = 0;
+
+    // 保護者用タイマー
     setInterval(() => {
         if (currentLayer === 3) {
             totalLearningSeconds++;
@@ -206,9 +246,6 @@
             document.getElementById('total-time-display').innerText = `${m}分${s.toString().padStart(2, '0')}秒`;
         }
     }, 1000);
-
-    let records = { add_ch: [], add_tk: [], sub_ch: [], sub_tk: [] };
-    let aiStats = [], problemQueue = [], currentProblem = null, startTime = 0;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSound(type) {
@@ -227,22 +264,50 @@
     function switchLayer(layerId) {
         currentLayer = layerId;
         ['layer-1', 'layer-2', 'layer-3', 'layer-4'].forEach(id => document.getElementById(id).classList.toggle('hidden', id !== 'layer-' + layerId));
-        document.getElementById('keypad').classList.toggle('hidden', layerId !== 3); // プレイ中以外はキーパッドを隠す
+        document.getElementById('keypad').classList.toggle('hidden', layerId !== 3); 
         
         if (layerId === 2) {
             document.getElementById('mode-title').innerText = (mode === 'add' ? "【たしざん】" : "【ひきざん】");
-            let unlocked = (mode === 'add' ? isUnlockedAdd : isUnlockedSub);
-            document.getElementById('tokkun-btn').className = "menu-btn green" + (unlocked ? "" : " locked");
             const p = mode === 'add' ? 'add' : 'sub';
-            showMiniRank(p + '_ch', 'best-ch-mini');
-            showMiniRank(p + '_tk', 'best-tk-mini');
+            
+            // ロック解除判定
+            const unlocked = (mode === 'add' ? isUnlockedAdd : isUnlockedSub);
+            document.getElementById('tokkun-btn').className = "menu-btn green" + (unlocked ? "" : " locked");
+            
+            // バッジとランキング更新
+            updateSubMenuUI(p);
+        }
+
+        // ★結果画面のときだけ、誤爆防止タイマーを起動
+        if (layerId === 4) {
+            const btns = [document.getElementById('retry-btn'), document.getElementById('menu-back-btn')];
+            btns.forEach(b => b.classList.add('btn-guard'));
+            setTimeout(() => btns.forEach(b => b.classList.remove('btn-guard')), 1000); // 1秒間だけクリック無効
         }
     }
 
-    function showMiniRank(key, id) {
-        const d = records[key], el = document.getElementById(id);
-        if (d.length === 0) { el.innerText = "記録なし"; return; }
-        el.innerText = "ベスト: " + d[0] + (key.includes('_ch') ? "s" : "問");
+    function updateSubMenuUI(prefix) {
+        // バッジ
+        document.getElementById('badge-ch').classList.toggle('hidden', clearCounts[prefix+'_ch'] === 0);
+        document.getElementById('badge-tk').classList.toggle('hidden', clearCounts[prefix+'_tk'] === 0);
+        
+        // ミニランキング
+        ['ch', 'tk'].forEach(type => {
+            const key = prefix + '_' + type;
+            const el = document.getElementById('rank-' + type);
+            const unit = type === 'ch' ? 's' : '問';
+            if (records[key].length === 0) { el.innerHTML = "<div>きろくなし</div>"; return; }
+            let html = "";
+            records[key].slice(0, 3).forEach((r, i) => {
+                html += `<div>${["🥇","🥈","🥉"][i]}${r}${unit}</div>`;
+            });
+            el.innerHTML = html;
+        });
+
+        // メイン画面の進捗更新
+        let totalCleared = 0;
+        Object.keys(clearCounts).forEach(k => { if(clearCounts[k] > 0) totalCleared++; });
+        document.getElementById('remaining-modes').innerText = 4 - totalCleared;
     }
 
     function startPlay(type) {
@@ -294,12 +359,19 @@
     }
 
     function checkAnswer(isCorrect) {
-        if (currentLayer !== 3 || (playType === 'tokkun' && msLeft <= 0)) return;
+        if (currentLayer !== 3) return;
+        // ★ご質問の件：30秒チャレンジで時間切れ後の入力はノーカウント
+        if (playType === 'tokkun' && msLeft <= 0) return;
+
         const elapsed = performance.now() - startTime; const overlay = document.getElementById('full-screen-overlay');
         let stats = aiStats.find(s => s.n1 === currentProblem.n1 && s.n2 === currentProblem.n2 && s.mode === mode);
         if (stats) { stats.totalTime += (isCorrect ? elapsed : 5000); stats.count++; }
-        if (isCorrect) { playSound('correct'); overlay.innerText = "〇"; overlay.className = "overlay-correct"; score++; }
-        else { playSound('wrong'); overlay.innerText = "×"; overlay.className = "overlay-wrong"; problemQueue.push({n1: currentProblem.n1, n2: currentProblem.n2}); }
+
+        if (isCorrect) {
+            playSound('correct'); overlay.innerText = "〇"; overlay.className = "overlay-correct"; score++;
+        } else {
+            playSound('wrong'); overlay.innerText = "×"; overlay.className = "overlay-wrong"; problemQueue.push({n1: currentProblem.n1, n2: currentProblem.n2});
+        }
         overlay.style.opacity = "1";
         if (playType === 'challenge' && problemQueue.length === 0 && isCorrect) { setTimeout(() => { overlay.style.opacity = "0"; endGame(false); }, 200); }
         else { setTimeout(() => { overlay.style.opacity = "0"; nextQuestion(); }, 200); }
@@ -307,24 +379,32 @@
 
     function endGame(isTimeUp) {
         clearInterval(timerInterval);
-        const title = document.getElementById('result-title'), body = document.getElementById('result-body');
+        const title = document.getElementById('result-title'), body = document.getElementById('result-body'), rank = document.getElementById('rank-info');
         const p = mode === 'add' ? 'add' : 'sub', key = p + (playType === 'challenge' ? '_ch' : '_tk');
+        rank.innerText = "";
 
         if (playType === 'challenge' && !isTimeUp) {
             title.innerText = "⭐ クリア！ ⭐"; let time = (msElapsed/1000).toFixed(1);
-            body.innerHTML = `タイム: <span style="color:var(--accent-blue)">${time}s</span>`;
+            body.innerHTML = `タイム: ${time}s`;
+            if (records[key].length === 0 || parseFloat(time) < records[key][0]) rank.innerText = "✨じこベスト こうしん！✨";
             records[key].push(parseFloat(time)); records[key].sort((a,b) => a - b);
             if (mode === 'add') isUnlockedAdd = true; else isUnlockedSub = true;
+            clearCounts[key]++;
         } else {
-            title.innerText = "タイムアップ！"; body.innerHTML = `せいかい: <span style="color:var(--accent-green)">${score}もん</span>`;
+            title.innerText = "タイムアップ！"; body.innerHTML = `せいかい: ${score}もん`;
+            if (records[key].length === 0 || score > records[key][0]) rank.innerText = "✨じこベスト こうしん！✨";
             records[key].push(score); records[key].sort((a,b) => b - a);
+            clearCounts[key]++;
         }
 
+        // 苦手表示
         let weak = aiStats.filter(s => s.mode === mode && s.count > 0).sort((a,b) => (b.totalTime/b.count) - (a.totalTime/a.count)).filter(s => (s.totalTime/s.count) > 1800).slice(0, 2);
         const weakSec = document.getElementById('weak-section'), weakList = document.getElementById('weak-list');
         weakList.innerHTML = "";
-        if (weak.length > 0) { weak.forEach(s => { let sign = (mode === 'add' ? '+' : '-'), ans = (mode === 'add' ? s.n1 + s.n2 : s.n1 - s.n2); weakList.innerHTML += `<div>${s.n1}${sign}${s.n2}=${ans}</div>`; }); weakSec.classList.remove('hidden'); }
-        else { weakSec.classList.add('hidden'); }
+        if (weak.length > 0) { 
+            weak.forEach(s => { let sign = (mode === 'add' ? '+' : '-'), ans = (mode === 'add' ? s.n1 + s.n2 : s.n1 - s.n2); weakList.innerHTML += `<div>${s.n1}${sign}${s.n2}=${ans}</div>`; }); 
+            weakSec.classList.remove('hidden'); 
+        } else { weakSec.classList.add('hidden'); }
         switchLayer(4);
     }
 </script>
