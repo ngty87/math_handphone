@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>計算トレーニング・スマホ版</title>
+    <title>計算トレーニング・スマホ最適化版</title>
     <style>
         :root {
             --bg-color: #f0f9ff;
@@ -26,7 +26,7 @@
             touch-action: manipulation;
         }
 
-        /* ★保護者用：実学習時間タイマー（控えめな表示） */
+        /* 保護者用タイマー */
         #daily-timer-header {
             background: transparent;
             padding: 5px 15px;
@@ -38,7 +38,6 @@
             right: 0;
             z-index: 100;
         }
-        #total-time-display.target-met { color: #64748b; font-weight: bold; }
 
         #display-area {
             flex: 1;
@@ -51,46 +50,73 @@
             box-sizing: border-box;
             min-height: 0;
         }
-        h1 { font-size: 19px; color: #0284c7; margin: 0 0 5px 0; }
 
         .info-card {
             background: white;
-            border-radius: 20px;
-            padding: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             width: 100%;
-            max-width: 360px;
+            max-width: 380px;
             box-sizing: border-box;
         }
+
+        /* メニューボタン（タップ用） */
+        .menu-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            background: var(--accent-blue);
+            color: white;
+            box-shadow: 0 4px 0 #2563eb;
+            transition: all 0.1s;
+        }
+        .menu-btn:active { transform: translateY(4px); box-shadow: none; }
+        .menu-btn.sub-btn { background: #f8fafc; color: #475569; box-shadow: 0 4px 0 #cbd5e1; }
+        .menu-btn.orange { background: var(--gold); box-shadow: 0 4px 0 #d97706; }
+        .menu-btn.green { background: var(--accent-green); box-shadow: 0 4px 0 #059669; }
+        .menu-btn.locked { opacity: 0.5; pointer-events: none; }
 
         .timer-container { width: 100%; background: #e2e8f0; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 8px; }
         #timer-bar { width: 100%; height: 100%; background: linear-gradient(90deg, #4ade80, #ef4444); transition: width 0.1s linear; }
 
-        #formula-display { font-size: 48px; font-weight: bold; margin: 8px 0; color: #1e293b; }
-        #user-input { color: var(--accent-blue); border-bottom: 4px solid #cbd5e1; min-width: 45px; display: inline-block; text-align: center; }
+        #formula-display { font-size: 56px; font-weight: bold; margin: 10px 0; color: #1e293b; }
+        #user-input { color: var(--accent-blue); border-bottom: 4px solid #cbd5e1; min-width: 50px; display: inline-block; text-align: center; }
 
-        .mode-status { font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-left: 5px; vertical-align: middle; }
-        .status-yet { background: #e2e8f0; color: #94a3b8; }
-        .status-done { background: #dcfce7; color: #166534; font-weight: bold; }
-        .star-count { color: var(--gold); font-weight: bold; margin-left: 5px; }
+        /* 記録表示 */
+        .ranking-box { margin-top: 5px; font-size: 11px; text-align: left; border-top: 1px dashed #e2e8f0; padding-top: 5px; }
 
-        .ranking-box { margin-top: 8px; background: #f8fafc; border-radius: 10px; padding: 6px; font-size: 12px; text-align: left; }
-        .rank-item { display: flex; justify-content: space-between; margin: 2px 0; }
-
+        /* 大型化したテンキー（0-9のみ） */
         #keypad {
             background: #cbd5e1;
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 2px;
-            padding: 6px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 3px;
+            padding: 8px;
             box-sizing: border-box;
-            padding-bottom: calc(6px + env(safe-area-inset-bottom)); 
+            padding-bottom: calc(8px + env(safe-area-inset-bottom)); 
             flex-shrink: 0;
         }
-        .key { background: var(--key-bg); border: none; height: 58px; font-size: 24px; font-weight: bold; color: var(--key-text); display: flex; align-items: center; justify-content: center; border-radius: 6px; }
-        .key:active { background: #cbd5e1; transform: scale(0.96); }
-        .key.op { background: #f1f5f9; color: var(--accent-blue); font-size: 20px; }
-        .key.enter { background: var(--accent-blue); color: white; grid-row: span 2; height: 118px; font-size: 30px; }
+        .key {
+            background: var(--key-bg);
+            border: none;
+            height: 70px; /* PC/電卓よりも高さを確保して指に合わせる */
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--key-text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .key:active { background: #cbd5e1; transform: scale(0.95); }
+        .key.zero { grid-column: span 3; height: 60px; }
 
         #full-screen-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 180px; font-weight: bold; z-index: 999; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
         .overlay-correct { background: rgba(220, 252, 231, 0.75); color: var(--accent-green); }
@@ -108,25 +134,24 @@
 <div id="display-area">
     <div id="layer-1" class="info-card">
         <h1>たしざん・ひきざん<br><span style="color:var(--gold)">ＡＩトレーニング！</span></h1>
-        <div style="font-weight: bold; color: #3b82f6; font-size:17px; background:#eff6ff; padding:12px; border-radius:10px; margin-top:5px;">
-            [ ＋ ] たしざん<br>[ － ] ひきざん
-        </div>
-        <div id="overall-clear-info" style="margin-top:10px; font-size:12px; color:#64748b;">全モードクリアを めざそう！</div>
+        <button class="menu-btn" onclick="selectMode('add')">たしざん をする</button>
+        <button class="menu-btn" onclick="selectMode('sub')">ひきざん をする</button>
     </div>
 
     <div id="layer-2" class="info-card hidden">
-        <h2 id="mode-title" style="margin:0; color:#0284c7; font-size:18px;">たしざん</h2>
-        <div style="text-align: left; font-size: 14px; margin-top:8px;">
-            <div style="background:#fff7ed; padding:8px; border-radius:8px; border:1px solid #fed7aa; margin-bottom:8px;">
-                <b>[ 1 ] ４３もん チャレ</b><span id="badge-ch" class="mode-status"></span><span id="stars-ch" class="star-count"></span>
-                <div id="best-challenge" class="ranking-box"></div>
-            </div>
-            <div id="tokkun-option" style="background:#f0fdf4; padding:8px; border-radius:8px; border:1px solid #bbf7d0;">
-                <b>[ 2 ] ３０びょう チャレ</b><span id="badge-tk" class="mode-status"></span><span id="stars-tk" class="star-count"></span>
-                <div id="best-tokkun" class="ranking-box"></div>
-            </div>
-            <p style="text-align:center; color:#64748b; font-weight:bold; font-size:12px; margin-top:8px;">[ ＋ ] か [ － ] で もどる</p>
-        </div>
+        <h2 id="mode-title" style="margin:0; color:#0284c7;">たしざん</h2>
+        
+        <button class="menu-btn orange" onclick="startPlay('challenge')">
+            43もん チャレンジ
+            <div id="best-ch-mini" class="ranking-box"></div>
+        </button>
+        
+        <button id="tokkun-btn" class="menu-btn green" onclick="startPlay('tokkun')">
+            30びょう チャレンジ
+            <div id="best-tk-mini" class="ranking-box"></div>
+        </button>
+
+        <button class="menu-btn sub-btn" onclick="backToMain()">さいしょの画面にもどる</button>
     </div>
 
     <div id="layer-3" class="hidden" style="width:100%">
@@ -134,37 +159,36 @@
         <div id="timer-text" style="font-weight:bold; color:var(--accent-red); font-size:18px;">0.0s</div>
         <div id="formula-display"><span id="formula-text"></span><span id="user-input"></span></div>
         <div style="font-weight:bold; color:#64748b; font-size:15px;">
-            <span id="score-label">せいかい:</span> <span id="score" style="color:var(--accent-blue)">0</span> / <span id="target-count">43</span>
+            せいかい: <span id="score" style="color:var(--accent-blue)">0</span> / <span id="target-count">43</span>
         </div>
     </div>
 
     <div id="layer-4" class="info-card hidden">
-        <h2 id="result-title" style="margin:0; font-size:20px;">クリア！</h2>
-        <div id="result-body" style="font-size: 20px; font-weight: bold; margin:5px 0;"></div>
-        <div id="time-comparison" style="font-size:13px; color:var(--gold); font-weight:bold;"></div>
-        <div id="rank-stars-info" style="margin:5px 0; color:var(--gold); font-size:18px;"></div>
-        <div id="weak-section" class="hidden" style="background:#fff1f2; padding:8px; border-radius:10px; margin-top:5px;">
+        <h2 id="result-title" style="margin:0;">クリア！</h2>
+        <div id="result-body" style="font-size: 24px; font-weight: bold; margin:10px 0;"></div>
+        <div id="time-comparison" style="font-size:14px; color:var(--gold); font-weight:bold; margin-bottom:10px;"></div>
+        
+        <div id="weak-section" class="hidden" style="background:#fff1f2; padding:10px; border-radius:10px; margin-bottom:10px;">
             <p style="color:var(--accent-red); margin:0; font-size:12px; font-weight:bold;">🔥 にがてな もんだい</p>
-            <div id="weak-list" style="font-size:18px; font-weight:bold; color:#e11d48;"></div>
+            <div id="weak-list" style="font-size:22px; font-weight:bold; color:#e11d48;"></div>
         </div>
-        <p style="font-size:12px; margin-top:8px; color:#64748b; font-weight:bold;">[ ◎ ] で つぎへ</p>
+        
+        <button class="menu-btn" onclick="backToSub()">もう一度あそぶ</button>
+        <button class="menu-btn sub-btn" onclick="backToMain()">メニューにもどる</button>
     </div>
 </div>
 
 <div id="keypad">
-    <button class="key" onclick="pressKey('7')">7</button>
-    <button class="key" onclick="pressKey('8')">8</button>
-    <button class="key" onclick="pressKey('9')">9</button>
-    <button class="key op" onclick="pressKey('+')">＋</button>
-    <button class="key" onclick="pressKey('4')">4</button>
-    <button class="key" onclick="pressKey('5')">5</button>
-    <button class="key" onclick="pressKey('6')">6</button>
-    <button class="key op" onclick="pressKey('-')">－</button>
-    <button class="key" onclick="pressKey('1')">1</button>
-    <button class="key" onclick="pressKey('2')">2</button>
-    <button class="key" onclick="pressKey('3')">3</button>
-    <button class="key enter" onclick="pressKey('Enter')">◎</button>
-    <button class="key" style="grid-column: span 3;" onclick="pressKey('0')">0</button>
+    <button class="key" onclick="handleNumInput('7')">7</button>
+    <button class="key" onclick="handleNumInput('8')">8</button>
+    <button class="key" onclick="handleNumInput('9')">9</button>
+    <button class="key" onclick="handleNumInput('4')">4</button>
+    <button class="key" onclick="handleNumInput('5')">5</button>
+    <button class="key" onclick="handleNumInput('6')">6</button>
+    <button class="key" onclick="handleNumInput('1')">1</button>
+    <button class="key" onclick="handleNumInput('2')">2</button>
+    <button class="key" onclick="handleNumInput('3')">3</button>
+    <button class="key zero" onclick="handleNumInput('0')">0</button>
 </div>
 
 <div id="full-screen-overlay">〇</div>
@@ -173,21 +197,17 @@
     let currentLayer = 1, mode = 'add', playType = 'challenge';
     let score = 0, msElapsed = 0, msLeft = 30000, timerInterval = null;
     let currentAnswer = 0, currentInput = "", isUnlockedAdd = false, isUnlockedSub = false;
-    let totalLearningSeconds = 0; // 実学習時間
+    let totalLearningSeconds = 0;
 
-    // ★実学習タイマー（1秒ごとに、プレイ中（Layer3）なら加算）
     setInterval(() => {
         if (currentLayer === 3) {
             totalLearningSeconds++;
             const m = Math.floor(totalLearningSeconds / 60), s = totalLearningSeconds % 60;
-            const display = document.getElementById('total-time-display');
-            display.innerText = `${m}分${s.toString().padStart(2, '0')}秒`;
-            if (totalLearningSeconds >= 600) display.classList.add('target-met');
+            document.getElementById('total-time-display').innerText = `${m}分${s.toString().padStart(2, '0')}秒`;
         }
     }, 1000);
 
     let records = { add_ch: [], add_tk: [], sub_ch: [], sub_tk: [] };
-    let clearCounts = { add_ch: 0, add_tk: 0, sub_ch: 0, sub_tk: 0 };
     let aiStats = [], problemQueue = [], currentProblem = null, startTime = 0;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -200,67 +220,74 @@
         else if (type === 'wrong') { osc.frequency.value = 140; gain.gain.setValueAtTime(0.1, audioCtx.currentTime); osc.start(); osc.stop(audioCtx.currentTime + 0.25); }
     }
 
-    function updateRankingDisplay(typeKey, elementId) {
-        const el = document.getElementById(elementId), data = records[typeKey];
-        if (data.length === 0) { el.innerHTML = "記録なし"; return; }
-        let html = ""; const unit = typeKey.includes('_ch') ? "s" : "問";
-        data.slice(0, 3).forEach((val, i) => { const icons = ["🥇", "🥈", "🥉"]; html += `<div class="rank-item"><span>${icons[i]} ${val}${unit}</span></div>`; });
-        el.innerHTML = html;
-    }
-
-    function updateBadges() {
-        const p = mode === 'add' ? 'add' : 'sub';
-        const setB = (id, count, starId) => {
-            const el = document.getElementById(id), sEl = document.getElementById(starId);
-            if (count > 0) { el.innerText = "OK!"; el.className = "mode-status status-done"; sEl.innerText = " ★×" + count; }
-            else { el.innerText = "未クリア"; el.className = "mode-status status-yet"; sEl.innerText = ""; }
-        };
-        setB('badge-ch', clearCounts[p+'_ch'], 'stars-ch'); setB('badge-tk', clearCounts[p+'_tk'], 'stars-tk');
-    }
+    function selectMode(m) { playSound('click'); mode = m; switchLayer(2); }
+    function backToMain() { playSound('click'); switchLayer(1); }
+    function backToSub() { playSound('click'); switchLayer(2); }
 
     function switchLayer(layerId) {
         currentLayer = layerId;
         ['layer-1', 'layer-2', 'layer-3', 'layer-4'].forEach(id => document.getElementById(id).classList.toggle('hidden', id !== 'layer-' + layerId));
+        document.getElementById('keypad').classList.toggle('hidden', layerId !== 3); // プレイ中以外はキーパッドを隠す
+        
         if (layerId === 2) {
             document.getElementById('mode-title').innerText = (mode === 'add' ? "【たしざん】" : "【ひきざん】");
-            document.getElementById('tokkun-option').style.opacity = (mode==='add'?isUnlockedAdd:isUnlockedSub) ? "1" : "0.3";
+            let unlocked = (mode === 'add' ? isUnlockedAdd : isUnlockedSub);
+            document.getElementById('tokkun-btn').className = "menu-btn green" + (unlocked ? "" : " locked");
             const p = mode === 'add' ? 'add' : 'sub';
-            updateRankingDisplay(p + '_ch', 'best-challenge'); updateRankingDisplay(p + '_tk', 'best-tokkun'); updateBadges();
+            showMiniRank(p + '_ch', 'best-ch-mini');
+            showMiniRank(p + '_tk', 'best-tk-mini');
         }
     }
 
-    function pressKey(key) {
-        playSound('click');
-        if (currentLayer === 1) { if (key === '+') { mode = 'add'; switchLayer(2); } if (key === '-') { mode = 'sub'; switchLayer(2); } }
-        else if (currentLayer === 2) { if (key === '1') { playType = 'challenge'; startGame(); } if (key === '2' && (mode === 'add' ? isUnlockedAdd : isUnlockedSub)) { playType = 'tokkun'; startGame(); } if (key === '+' || key === '-') { switchLayer(1); } }
-        else if (currentLayer === 3) { if (/[0-9]/.test(key)) handleNumInput(key); }
-        else if (currentLayer === 4) { if (key === 'Enter') switchLayer(2); }
+    function showMiniRank(key, id) {
+        const d = records[key], el = document.getElementById(id);
+        if (d.length === 0) { el.innerText = "記録なし"; return; }
+        el.innerText = "ベスト: " + d[0] + (key.includes('_ch') ? "s" : "問");
     }
 
-    function startGame() {
+    function startPlay(type) {
+        playSound('click'); playType = type;
         score = 0; currentInput = ""; problemQueue = [];
         let list = [];
         if (mode === 'add') { for(let i=2;i<=9;i++) for(let j=2;j<=9;j++) if(i+j>=10) list.push({n1:i, n2:j}); }
         else { for(let i=11;i<=18;i++) { let m=(i%10)+1; for(let j=m;j<=9;j++) list.push({n1:i, n2:j}); } }
         list.sort(() => Math.random() - 0.5);
         list.forEach(b => { if(!aiStats.some(s => s.n1 === b.n1 && s.n2 === b.n2 && s.mode === mode)) aiStats.push({n1:b.n1, n2:b.n2, mode, totalTime:0, count:0}); });
-        if (playType === 'challenge') { problemQueue = list; document.getElementById('target-count').innerText = "43"; document.getElementById('score-label').innerText = "せいかい:"; document.getElementById('timer-bar').style.width = "100%"; }
-        else { let f = aiStats.filter(s => s.mode === mode); f.sort((a,b) => (b.totalTime/(b.count||1)) - (a.totalTime/(a.count||1))); problemQueue = f.map(s => ({n1:s.n1, n2:s.n2})); document.getElementById('target-count').innerText = "？"; document.getElementById('score-label').innerText = "てんすう:"; }
+        
+        if (playType === 'challenge') {
+            problemQueue = list; document.getElementById('target-count').innerText = "43";
+            document.getElementById('timer-bar').style.width = "100%";
+        } else {
+            let f = aiStats.filter(s => s.mode === mode);
+            f.sort((a,b) => (b.totalTime/(b.count||1)) - (a.totalTime/(a.count||1)));
+            problemQueue = f.map(s => ({n1:s.n1, n2:s.n2}));
+            document.getElementById('target-count').innerText = "？";
+        }
         switchLayer(3); nextQuestion();
         clearInterval(timerInterval);
-        if (playType === 'challenge') { msElapsed = 0; timerInterval = setInterval(() => { msElapsed += 100; document.getElementById('timer-text').innerText = (msElapsed/1000).toFixed(1) + "s"; }, 100); }
-        else { msLeft = 30000; timerInterval = setInterval(() => { msLeft -= 100; document.getElementById('timer-text').innerText = (msLeft/1000).toFixed(1) + "s"; document.getElementById('timer-bar').style.width = (msLeft/30000*100) + '%'; if (msLeft <= 0) endGame(true); }, 100); }
+        if (playType === 'challenge') {
+            msElapsed = 0;
+            timerInterval = setInterval(() => { msElapsed += 100; document.getElementById('timer-text').innerText = (msElapsed/1000).toFixed(1) + "s"; }, 100);
+        } else {
+            msLeft = 30000;
+            timerInterval = setInterval(() => { 
+                msLeft -= 100; document.getElementById('timer-text').innerText = (msLeft/1000).toFixed(1) + "s"; 
+                document.getElementById('timer-bar').style.width = (msLeft/30000*100) + '%'; 
+                if (msLeft <= 0) endGame(true); 
+            }, 100);
+        }
     }
 
     function nextQuestion() {
-        if (problemQueue.length === 0) { if (playType === 'challenge') { endGame(false); return; } else { startGame(); return; } }
+        if (problemQueue.length === 0) { if (playType === 'challenge') { endGame(false); return; } else { startPlay(playType); return; } }
         currentProblem = problemQueue.shift(); currentInput = ""; document.getElementById('user-input').innerText = "";
         let sign = (mode === 'add' ? '+' : '-'); currentAnswer = (mode === 'add' ? currentProblem.n1 + currentProblem.n2 : currentProblem.n1 - currentProblem.n2);
-        document.getElementById('formula-text').innerText = `${currentProblem.n1}${sign}${currentProblem.n2}=`; document.getElementById('score').innerText = score; startTime = performance.now();
+        document.getElementById('formula-text').innerText = `${currentProblem.n1}${sign}${currentProblem.n2}=`;
+        document.getElementById('score').innerText = score; startTime = performance.now();
     }
 
     function handleNumInput(num) {
-        currentInput += num; document.getElementById('user-input').innerText = currentInput;
+        playSound('click'); currentInput += num; document.getElementById('user-input').innerText = currentInput;
         let t = currentAnswer.toString();
         if (t.length > currentInput.length) { if (!t.startsWith(currentInput)) checkAnswer(false); return; }
         checkAnswer(currentInput === t);
@@ -281,23 +308,17 @@
     function endGame(isTimeUp) {
         clearInterval(timerInterval);
         const title = document.getElementById('result-title'), body = document.getElementById('result-body');
-        const starInfo = document.getElementById('rank-stars-info'); starInfo.innerText = "";
         const p = mode === 'add' ? 'add' : 'sub', key = p + (playType === 'challenge' ? '_ch' : '_tk');
 
         if (playType === 'challenge' && !isTimeUp) {
             title.innerText = "⭐ クリア！ ⭐"; let time = (msElapsed/1000).toFixed(1);
             body.innerHTML = `タイム: <span style="color:var(--accent-blue)">${time}s</span>`;
-            let list = records[key]; if (list.length === 0 || parseFloat(time) < list[0]) starInfo.innerText = "🎊 自己ベスト！";
-            list.push(parseFloat(time)); list.sort((a,b) => a - b);
+            records[key].push(parseFloat(time)); records[key].sort((a,b) => a - b);
             if (mode === 'add') isUnlockedAdd = true; else isUnlockedSub = true;
-            clearCounts[key]++;
         } else {
             title.innerText = "タイムアップ！"; body.innerHTML = `せいかい: <span style="color:var(--accent-green)">${score}もん</span>`;
-            let list = records[key]; if (list.length === 0 || score > list[0]) starInfo.innerText = "🎊 自己ベスト！";
-            list.push(score); list.sort((a,b) => b - a);
-            clearCounts[key]++;
+            records[key].push(score); records[key].sort((a,b) => b - a);
         }
-        starInfo.innerText += " ★ ゲット！";
 
         let weak = aiStats.filter(s => s.mode === mode && s.count > 0).sort((a,b) => (b.totalTime/b.count) - (a.totalTime/a.count)).filter(s => (s.totalTime/s.count) > 1800).slice(0, 2);
         const weakSec = document.getElementById('weak-section'), weakList = document.getElementById('weak-list');
