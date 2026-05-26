@@ -26,7 +26,6 @@
             touch-action: manipulation;
         }
 
-        /* 保護者用タイマー */
         #daily-timer-header {
             background: transparent;
             padding: 5px 15px;
@@ -62,10 +61,8 @@
             position: relative;
         }
 
-        /* タイトル */
         .main-title { font-size: 24px; color: #0284c7; margin: 0 0 15px 0; line-height: 1.2; }
 
-        /* ボタン */
         .menu-btn {
             display: block;
             width: 100%;
@@ -87,10 +84,8 @@
         .menu-btn.green { background: var(--accent-green); box-shadow: 0 4px 0 #059669; }
         .menu-btn.locked { opacity: 0.5; filter: grayscale(0.8); pointer-events: none; }
 
-        /* 説明文 */
         .btn-desc { font-size: 11px; font-weight: normal; margin-top: 4px; opacity: 0.9; }
 
-        /* バッジ */
         .badge {
             font-size: 11px;
             background: rgba(255,255,255,0.95);
@@ -125,7 +120,6 @@
         #formula-display { font-size: 56px; font-weight: bold; margin: 10px 0; color: #1e293b; }
         #user-input { color: var(--accent-blue); border-bottom: 4px solid #cbd5e1; min-width: 50px; display: inline-block; }
 
-        /* カウントダウン表示 */
         #countdown-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(240, 249, 255, 0.9);
@@ -134,7 +128,6 @@
             z-index: 1000;
         }
 
-        /* テンキー */
         #keypad {
             background: #cbd5e1;
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;
@@ -155,6 +148,12 @@
 
         .hidden { display: none !important; }
         .btn-guard { pointer-events: none; opacity: 0.7; }
+
+        /* 苦手ランキング用 */
+        .weak-title { color:var(--accent-red); margin:0; font-size:14px; font-weight:bold; }
+        .weak-row { display: flex; justify-content: center; gap: 15px; margin-top: 8px; font-size: 20px; font-weight: bold; }
+        .weak-item { display: flex; flex-direction: column; align-items: center; }
+        .weak-rank-label { font-size: 10px; color: #94a3b8; margin-bottom: -4px; }
     </style>
 </head>
 <body>
@@ -172,21 +171,18 @@
 
     <div id="layer-2" class="info-card hidden">
         <h2 id="mode-title" style="margin:0 0 10px 0; color:#0284c7;">モード選択</h2>
-        
         <button class="menu-btn orange" onclick="preStartPlay('challenge')">
             <span id="badge-ch" class="badge">まずはここから！</span>
             43もん チャレンジ
             <div class="btn-desc">どれだけはやく 43もんを とけるか？</div>
             <div id="rank-ch" class="ranking-area"></div>
         </button>
-        
         <button id="tokkun-btn" class="menu-btn green" onclick="preStartPlay('tokkun')">
             <span id="badge-tk" class="badge hidden">クリア！</span>
             30びょう チャレンジ
             <div class="btn-desc">30びょうで いくつ とけるか？</div>
             <div id="rank-tk" class="ranking-area"></div>
         </button>
-
         <button class="menu-btn sub-btn" onclick="backToMain()">さいしょの画面にもどる</button>
     </div>
 
@@ -208,8 +204,8 @@
         <button id="menu-back-btn" class="menu-btn sub-btn" onclick="backToMain()">さいしょの画面にもどる</button>
 
         <div id="weak-section" class="hidden" style="background:#fff1f2; padding:10px; border-radius:12px; margin-top:10px;">
-            <p style="color:var(--accent-red); margin:0; font-size:12px; font-weight:bold;">🔥 つぎは これを がんばろう！</p>
-            <div id="weak-list" style="font-size:22px; font-weight:bold; color:#e11d48; margin-top:5px;"></div>
+            <p class="weak-title">⚠️ このけいさんに ちゅうい！</p>
+            <div id="weak-list" class="weak-row"></div>
         </div>
     </div>
 </div>
@@ -241,7 +237,6 @@
     let clearCounts = { add_ch: 0, add_tk: 0, sub_ch: 0, sub_tk: 0 };
     let aiStats = [], problemQueue = [], currentProblem = null, startTime = 0;
 
-    // 実学習タイマー
     setInterval(() => {
         if (currentLayer === 3) {
             totalLearningSeconds++;
@@ -268,18 +263,14 @@
         currentLayer = layerId;
         ['layer-1', 'layer-2', 'layer-3', 'layer-4'].forEach(id => document.getElementById(id).classList.toggle('hidden', id !== 'layer-' + layerId));
         document.getElementById('keypad').classList.toggle('hidden', layerId !== 3); 
-        
         if (layerId === 2) {
             const mName = mode === 'add' ? "たしざん" : "ひきざん";
             document.getElementById('mode-title').innerText = "【" + mName + "】モード";
             const p = mode === 'add' ? 'add' : 'sub';
-            
             const unlocked = (mode === 'add' ? isUnlockedAdd : isUnlockedSub);
             document.getElementById('tokkun-btn').className = "menu-btn green" + (unlocked ? "" : " locked");
-            
             updateSubMenuUI(p);
         }
-
         if (layerId === 4) {
             document.getElementById('retry-btn').innerText = (mode === 'add' ? "【たしざん】" : "【ひきざん】") + "にもどる";
             const btns = [document.getElementById('retry-btn'), document.getElementById('menu-back-btn')];
@@ -290,48 +281,29 @@
 
     function updateSubMenuUI(prefix) {
         const badgeCh = document.getElementById('badge-ch');
-        if (clearCounts[prefix+'_ch'] > 0) {
-            badgeCh.innerText = "クリア！";
-            badgeCh.classList.remove('guide');
-        } else {
-            badgeCh.innerText = "まずはここから！";
-            badgeCh.classList.add('guide');
-        }
+        if (clearCounts[prefix+'_ch'] > 0) { badgeCh.innerText = "クリア！"; badgeCh.classList.remove('guide'); }
+        else { badgeCh.innerText = "まずはここから！"; badgeCh.classList.add('guide'); }
         document.getElementById('badge-tk').classList.toggle('hidden', clearCounts[prefix+'_tk'] === 0);
-        
         ['ch', 'tk'].forEach(type => {
             const key = prefix + '_' + type;
             const el = document.getElementById('rank-' + type);
             const unit = type === 'ch' ? 's' : '問';
             if (records[key].length === 0) { el.innerHTML = "<div>きろくなし</div>"; return; }
             let html = "";
-            records[key].slice(0, 3).forEach((r, i) => {
-                html += `<div>${["🥇","🥈","🥉"][i]}${r}${unit}</div>`;
-            });
+            records[key].slice(0, 3).forEach((r, i) => { html += `<div>${["🥇","🥈","🥉"][i]}${r}${unit}</div>`; });
             el.innerHTML = html;
         });
     }
 
-    // カウントダウン演出
     function preStartPlay(type) {
-        playSound('click');
-        playType = type;
+        playSound('click'); playType = type;
         const overlay = document.getElementById('countdown-overlay');
         overlay.classList.remove('hidden');
-        
-        let count = 3;
-        overlay.innerText = count;
-        
+        let count = 3; overlay.innerText = count;
         const cdInt = setInterval(() => {
             count--;
-            if (count > 0) {
-                overlay.innerText = count;
-                playSound('click');
-            } else {
-                clearInterval(cdInt);
-                overlay.classList.add('hidden');
-                startPlay();
-            }
+            if (count > 0) { overlay.innerText = count; playSound('click'); }
+            else { clearInterval(cdInt); overlay.classList.add('hidden'); startPlay(); }
         }, 800);
     }
 
@@ -342,29 +314,12 @@
         else { for(let i=11;i<=18;i++) { let m=(i%10)+1; for(let j=m;j<=9;j++) list.push({n1:i, n2:j}); } }
         list.sort(() => Math.random() - 0.5);
         list.forEach(b => { if(!aiStats.some(s => s.n1 === b.n1 && s.n2 === b.n2 && s.mode === mode)) aiStats.push({n1:b.n1, n2:b.n2, mode, totalTime:0, count:0}); });
-        
-        if (playType === 'challenge') {
-            problemQueue = list; document.getElementById('target-count').innerText = "43";
-            document.getElementById('timer-bar').style.width = "100%";
-        } else {
-            let f = aiStats.filter(s => s.mode === mode);
-            f.sort((a,b) => (b.totalTime/(b.count||1)) - (a.totalTime/(a.count||1)));
-            problemQueue = f.map(s => ({n1:s.n1, n2:s.n2}));
-            document.getElementById('target-count').innerText = "？";
-        }
+        if (playType === 'challenge') { problemQueue = list; document.getElementById('target-count').innerText = "43"; document.getElementById('timer-bar').style.width = "100%"; }
+        else { let f = aiStats.filter(s => s.mode === mode); f.sort((a,b) => (b.totalTime/(b.count||1)) - (a.totalTime/(a.count||1))); problemQueue = f.map(s => ({n1:s.n1, n2:s.n2})); document.getElementById('target-count').innerText = "？"; }
         switchLayer(3); nextQuestion();
         clearInterval(timerInterval);
-        if (playType === 'challenge') {
-            msElapsed = 0;
-            timerInterval = setInterval(() => { msElapsed += 100; document.getElementById('timer-text').innerText = (msElapsed/1000).toFixed(1) + "s"; }, 100);
-        } else {
-            msLeft = 30000;
-            timerInterval = setInterval(() => { 
-                msLeft -= 100; document.getElementById('timer-text').innerText = (msLeft/1000).toFixed(1) + "s"; 
-                document.getElementById('timer-bar').style.width = (msLeft/30000*100) + '%'; 
-                if (msLeft <= 0) endGame(true); 
-            }, 100);
-        }
+        if (playType === 'challenge') { msElapsed = 0; timerInterval = setInterval(() => { msElapsed += 100; document.getElementById('timer-text').innerText = (msElapsed/1000).toFixed(1) + "s"; }, 100); }
+        else { msLeft = 30000; timerInterval = setInterval(() => { msLeft -= 100; document.getElementById('timer-text').innerText = (msLeft/1000).toFixed(1) + "s"; document.getElementById('timer-bar').style.width = (msLeft/30000*100) + '%'; if (msLeft <= 0) endGame(true); }, 100); }
     }
 
     function nextQuestion() {
@@ -400,7 +355,6 @@
         const title = document.getElementById('result-title'), body = document.getElementById('result-body'), rank = document.getElementById('rank-info');
         const p = mode === 'add' ? 'add' : 'sub', key = p + (playType === 'challenge' ? '_ch' : '_tk');
         rank.innerText = "";
-
         if (playType === 'challenge' && !isTimeUp) {
             title.innerText = "⭐ クリア！ ⭐"; let time = (msElapsed/1000).toFixed(1);
             body.innerHTML = `タイム: ${time}s`;
@@ -414,12 +368,17 @@
             records[key].push(score); records[key].sort((a,b) => b - a);
             clearCounts[key]++;
         }
-
-        let weak = aiStats.filter(s => s.mode === mode && s.count > 0).sort((a,b) => (b.totalTime/b.count) - (a.totalTime/a.count)).filter(s => (s.totalTime/s.count) > 1800).slice(0, 2);
+        // ★苦手ランキング：平均解答時間が長い順に抽出
+        let weak = aiStats.filter(s => s.mode === mode && s.count > 0)
+                          .sort((a,b) => (b.totalTime/b.count) - (a.totalTime/a.count))
+                          .slice(0, 3);
         const weakSec = document.getElementById('weak-section'), weakList = document.getElementById('weak-list');
         weakList.innerHTML = "";
         if (weak.length > 0) { 
-            weak.forEach(s => { let sign = (mode === 'add' ? '+' : '-'), ans = (mode === 'add' ? s.n1 + s.n2 : s.n1 - s.n2); weakList.innerHTML += `<div>${s.n1}${sign}${s.n2}=${ans}</div>`; }); 
+            weak.forEach((s, i) => { 
+                let sign = (mode === 'add' ? '+' : '-'), ans = (mode === 'add' ? s.n1 + s.n2 : s.n1 - s.n2);
+                weakList.innerHTML += `<div class="weak-item"><span class="weak-rank-label">${i+1}い</span><div>${s.n1}${sign}${s.n2}</div></div>`; 
+            }); 
             weakSec.classList.remove('hidden'); 
         } else { weakSec.classList.add('hidden'); }
         switchLayer(4);
