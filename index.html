@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>計算トレーニング・スマホ版</title>
+    <title>たしざん・ひきざん トレーニング</title>
     <style>
         :root {
             --bg-color: #f0f9ff;
@@ -62,6 +62,9 @@
             position: relative;
         }
 
+        /* タイトル */
+        .main-title { font-size: 24px; color: #0284c7; margin: 0 0 15px 0; line-height: 1.2; }
+
         /* ボタン */
         .menu-btn {
             display: block;
@@ -84,6 +87,9 @@
         .menu-btn.green { background: var(--accent-green); box-shadow: 0 4px 0 #059669; }
         .menu-btn.locked { opacity: 0.5; filter: grayscale(0.8); pointer-events: none; }
 
+        /* 説明文 */
+        .btn-desc { font-size: 11px; font-weight: normal; margin-top: 4px; opacity: 0.9; }
+
         /* バッジ */
         .badge {
             font-size: 11px;
@@ -98,6 +104,7 @@
             font-weight: bold;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        .badge.guide { color: #f59e0b; border-color: #fde68a; background: #fffbeb; }
 
         .ranking-area {
             margin-top: 6px;
@@ -118,28 +125,26 @@
         #formula-display { font-size: 56px; font-weight: bold; margin: 10px 0; color: #1e293b; }
         #user-input { color: var(--accent-blue); border-bottom: 4px solid #cbd5e1; min-width: 50px; display: inline-block; }
 
+        /* カウントダウン表示 */
+        #countdown-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(240, 249, 255, 0.9);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 120px; font-weight: bold; color: var(--accent-blue);
+            z-index: 1000;
+        }
+
         /* テンキー */
         #keypad {
             background: #cbd5e1;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 3px;
-            padding: 8px;
-            box-sizing: border-box;
-            padding-bottom: calc(8px + env(safe-area-inset-bottom)); 
-            flex-shrink: 0;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;
+            padding: 8px; box-sizing: border-box;
+            padding-bottom: calc(8px + env(safe-area-inset-bottom)); flex-shrink: 0;
         }
         .key {
-            background: var(--key-bg);
-            border: none;
-            height: 70px;
-            font-size: 32px;
-            font-weight: bold;
-            color: var(--key-text);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
+            background: var(--key-bg); border: none; height: 70px;
+            font-size: 32px; font-weight: bold; color: var(--key-text);
+            display: flex; align-items: center; justify-content: center; border-radius: 8px;
         }
         .key:active { background: #cbd5e1; transform: scale(0.95); }
         .key.zero { grid-column: span 3; height: 55px; }
@@ -149,8 +154,6 @@
         .overlay-wrong { background: rgba(254, 226, 226, 0.75); color: var(--accent-red); }
 
         .hidden { display: none !important; }
-
-        /* ★終了画面のボタンガード用スタイル */
         .btn-guard { pointer-events: none; opacity: 0.7; }
     </style>
 </head>
@@ -162,26 +165,25 @@
 
 <div id="display-area">
     <div id="layer-1" class="info-card">
-        <h1 style="margin-bottom:15px;">たしざん・ひきざん<br><span style="color:var(--gold)">ＡＩトレーニング！</span></h1>
+        <h1 class="main-title">たしざん・ひきざん<br>トレーニング！</h1>
         <button class="menu-btn" onclick="selectMode('add')">たしざん をする</button>
         <button class="menu-btn" onclick="selectMode('sub')">ひきざん をする</button>
-        <div id="overall-status" style="font-size:12px; color:#64748b; margin-top:10px; background:#f8fafc; padding:8px; border-radius:10px;">
-            ぜんぶで 4モードあるよ！
-        </div>
     </div>
 
     <div id="layer-2" class="info-card hidden">
         <h2 id="mode-title" style="margin:0 0 10px 0; color:#0284c7;">モード選択</h2>
         
-        <button class="menu-btn orange" onclick="startPlay('challenge')">
-            <span id="badge-ch" class="badge hidden">クリア！</span>
+        <button class="menu-btn orange" onclick="preStartPlay('challenge')">
+            <span id="badge-ch" class="badge">まずはここから！</span>
             43もん チャレンジ
+            <div class="btn-desc">どれだけはやく 43もんを とけるか？</div>
             <div id="rank-ch" class="ranking-area"></div>
         </button>
         
-        <button id="tokkun-btn" class="menu-btn green" onclick="startPlay('tokkun')">
+        <button id="tokkun-btn" class="menu-btn green" onclick="preStartPlay('tokkun')">
             <span id="badge-tk" class="badge hidden">クリア！</span>
             30びょう チャレンジ
+            <div class="btn-desc">30びょうで いくつ とけるか？</div>
             <div id="rank-tk" class="ranking-area"></div>
         </button>
 
@@ -202,8 +204,8 @@
         <div id="result-body" style="font-size: 26px; font-weight: bold; margin:5px 0; color:var(--accent-blue);"></div>
         <div id="rank-info" style="font-size:15px; color:var(--gold); font-weight:bold; margin-bottom:10px;"></div>
         
-        <button id="retry-btn" class="menu-btn" onclick="backToSub()">もういちど あそぶ</button>
-        <button id="menu-back-btn" class="menu-btn sub-btn" onclick="backToMain()">メニューにもどる</button>
+        <button id="retry-btn" class="menu-btn" onclick="backToSub()">【モード名】にもどる</button>
+        <button id="menu-back-btn" class="menu-btn sub-btn" onclick="backToMain()">さいしょの画面にもどる</button>
 
         <div id="weak-section" class="hidden" style="background:#fff1f2; padding:10px; border-radius:12px; margin-top:10px;">
             <p style="color:var(--accent-red); margin:0; font-size:12px; font-weight:bold;">🔥 つぎは これを がんばろう！</p>
@@ -211,6 +213,8 @@
         </div>
     </div>
 </div>
+
+<div id="countdown-overlay" class="hidden"></div>
 
 <div id="keypad" class="hidden">
     <button class="key" onclick="handleNumInput('7')">7</button>
@@ -233,12 +237,11 @@
     let currentAnswer = 0, currentInput = "", isUnlockedAdd = false, isUnlockedSub = false;
     let totalLearningSeconds = 0;
 
-    // 記録用
     let records = { add_ch: [], add_tk: [], sub_ch: [], sub_tk: [] };
     let clearCounts = { add_ch: 0, add_tk: 0, sub_ch: 0, sub_tk: 0 };
     let aiStats = [], problemQueue = [], currentProblem = null, startTime = 0;
 
-    // 保護者用タイマー
+    // 実学習タイマー
     setInterval(() => {
         if (currentLayer === 3) {
             totalLearningSeconds++;
@@ -267,31 +270,35 @@
         document.getElementById('keypad').classList.toggle('hidden', layerId !== 3); 
         
         if (layerId === 2) {
-            document.getElementById('mode-title').innerText = (mode === 'add' ? "【たしざん】" : "【ひきざん】");
+            const mName = mode === 'add' ? "たしざん" : "ひきざん";
+            document.getElementById('mode-title').innerText = "【" + mName + "】モード";
             const p = mode === 'add' ? 'add' : 'sub';
             
-            // ロック解除判定
             const unlocked = (mode === 'add' ? isUnlockedAdd : isUnlockedSub);
             document.getElementById('tokkun-btn').className = "menu-btn green" + (unlocked ? "" : " locked");
             
-            // バッジとランキング更新
             updateSubMenuUI(p);
         }
 
-        // ★結果画面のときだけ、誤爆防止タイマーを起動
         if (layerId === 4) {
+            document.getElementById('retry-btn').innerText = (mode === 'add' ? "【たしざん】" : "【ひきざん】") + "にもどる";
             const btns = [document.getElementById('retry-btn'), document.getElementById('menu-back-btn')];
             btns.forEach(b => b.classList.add('btn-guard'));
-            setTimeout(() => btns.forEach(b => b.classList.remove('btn-guard')), 1000); // 1秒間だけクリック無効
+            setTimeout(() => btns.forEach(b => b.classList.remove('btn-guard')), 1000);
         }
     }
 
     function updateSubMenuUI(prefix) {
-        // バッジ
-        document.getElementById('badge-ch').classList.toggle('hidden', clearCounts[prefix+'_ch'] === 0);
+        const badgeCh = document.getElementById('badge-ch');
+        if (clearCounts[prefix+'_ch'] > 0) {
+            badgeCh.innerText = "クリア！";
+            badgeCh.classList.remove('guide');
+        } else {
+            badgeCh.innerText = "まずはここから！";
+            badgeCh.classList.add('guide');
+        }
         document.getElementById('badge-tk').classList.toggle('hidden', clearCounts[prefix+'_tk'] === 0);
         
-        // ミニランキング
         ['ch', 'tk'].forEach(type => {
             const key = prefix + '_' + type;
             const el = document.getElementById('rank-' + type);
@@ -303,15 +310,32 @@
             });
             el.innerHTML = html;
         });
-
-        // メイン画面の進捗更新
-        let totalCleared = 0;
-        Object.keys(clearCounts).forEach(k => { if(clearCounts[k] > 0) totalCleared++; });
-        document.getElementById('remaining-modes').innerText = 4 - totalCleared;
     }
 
-    function startPlay(type) {
-        playSound('click'); playType = type;
+    // カウントダウン演出
+    function preStartPlay(type) {
+        playSound('click');
+        playType = type;
+        const overlay = document.getElementById('countdown-overlay');
+        overlay.classList.remove('hidden');
+        
+        let count = 3;
+        overlay.innerText = count;
+        
+        const cdInt = setInterval(() => {
+            count--;
+            if (count > 0) {
+                overlay.innerText = count;
+                playSound('click');
+            } else {
+                clearInterval(cdInt);
+                overlay.classList.add('hidden');
+                startPlay();
+            }
+        }, 800);
+    }
+
+    function startPlay() {
         score = 0; currentInput = ""; problemQueue = [];
         let list = [];
         if (mode === 'add') { for(let i=2;i<=9;i++) for(let j=2;j<=9;j++) if(i+j>=10) list.push({n1:i, n2:j}); }
@@ -344,7 +368,7 @@
     }
 
     function nextQuestion() {
-        if (problemQueue.length === 0) { if (playType === 'challenge') { endGame(false); return; } else { startPlay(playType); return; } }
+        if (problemQueue.length === 0) { if (playType === 'challenge') { endGame(false); return; } else { startPlay(); return; } }
         currentProblem = problemQueue.shift(); currentInput = ""; document.getElementById('user-input').innerText = "";
         let sign = (mode === 'add' ? '+' : '-'); currentAnswer = (mode === 'add' ? currentProblem.n1 + currentProblem.n2 : currentProblem.n1 - currentProblem.n2);
         document.getElementById('formula-text').innerText = `${currentProblem.n1}${sign}${currentProblem.n2}=`;
@@ -360,18 +384,12 @@
 
     function checkAnswer(isCorrect) {
         if (currentLayer !== 3) return;
-        // ★ご質問の件：30秒チャレンジで時間切れ後の入力はノーカウント
         if (playType === 'tokkun' && msLeft <= 0) return;
-
         const elapsed = performance.now() - startTime; const overlay = document.getElementById('full-screen-overlay');
         let stats = aiStats.find(s => s.n1 === currentProblem.n1 && s.n2 === currentProblem.n2 && s.mode === mode);
         if (stats) { stats.totalTime += (isCorrect ? elapsed : 5000); stats.count++; }
-
-        if (isCorrect) {
-            playSound('correct'); overlay.innerText = "〇"; overlay.className = "overlay-correct"; score++;
-        } else {
-            playSound('wrong'); overlay.innerText = "×"; overlay.className = "overlay-wrong"; problemQueue.push({n1: currentProblem.n1, n2: currentProblem.n2});
-        }
+        if (isCorrect) { playSound('correct'); overlay.innerText = "〇"; overlay.className = "overlay-correct"; score++; }
+        else { playSound('wrong'); overlay.innerText = "×"; overlay.className = "overlay-wrong"; problemQueue.push({n1: currentProblem.n1, n2: currentProblem.n2}); }
         overlay.style.opacity = "1";
         if (playType === 'challenge' && problemQueue.length === 0 && isCorrect) { setTimeout(() => { overlay.style.opacity = "0"; endGame(false); }, 200); }
         else { setTimeout(() => { overlay.style.opacity = "0"; nextQuestion(); }, 200); }
@@ -397,7 +415,6 @@
             clearCounts[key]++;
         }
 
-        // 苦手表示
         let weak = aiStats.filter(s => s.mode === mode && s.count > 0).sort((a,b) => (b.totalTime/b.count) - (a.totalTime/a.count)).filter(s => (s.totalTime/s.count) > 1800).slice(0, 2);
         const weakSec = document.getElementById('weak-section'), weakList = document.getElementById('weak-list');
         weakList.innerHTML = "";
